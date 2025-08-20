@@ -1,5 +1,5 @@
 name: "Force Push Artifact To Repo"
-description: "A composite action to download an artifact and push it to a target repository"
+description: "A composite action to download an artifact and push it to a target repository.  Automatically includes .binder for notebook pushes"
 
 inputs:
   target_repo_name:
@@ -55,6 +55,7 @@ runs:
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         git add .
+        git add .binder || true
         # Only commit and push if there are changes
         if ! git diff --cached --quiet; then
           git commit -m "Update artifact"
