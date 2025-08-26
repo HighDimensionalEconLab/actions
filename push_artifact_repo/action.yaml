@@ -42,7 +42,7 @@ runs:
     - name: Copy Artifact to Target Repository
       shell: bash
       run: |
-        rm -rf target_repo/*
+        find . -mindepth 1 -maxdepth 1 ! -name ".git" -exec rm -rf {} +
         cp -r ./artifact/* target_repo/
 
     - name: Force Push Changes to Target Repository
@@ -58,7 +58,7 @@ runs:
         git add .binder || true
         # Only commit and push if there are changes
         if ! git diff --cached --quiet; then
-          git commit -m "Update artifact"
+          git add -A && git commit -m "Update artifact"
           git push --force origin ${{ inputs.branch_name }}
         else
           echo "No changes to commit or push."
