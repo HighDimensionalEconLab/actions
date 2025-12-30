@@ -1,0 +1,189 @@
+name: 'Build Quarto Project'
+description: 'Sets up Python, Node, Julia, and Quarto environment and renders a Quarto project'
+branding:
+  icon: 'book-open'
+  color: 'blue'
+
+inputs:
+  apt-packages:
+    description: 'Space-separated list of apt packages to install'
+    required: false
+    default: 'ffmpeg graphviz'
+  pdf-cache-dir:
+    description: 'Directory for PDF cache'
+    required: false
+    default: '.pdf_cache'
+  quarto-args:
+    description: 'Additional arguments to pass to quarto render'
+    required: false
+    default: ''
+  quarto-profile:
+    description: 'Quarto profile(s) to use for rendering (comma-separated)'
+    required: false
+    default: 'lectures'
+  output-dir:
+    description: 'Output directory for rendered Quarto project'
+    required: false
+    default: '.lectures_output'
+  artifact-name:
+    description: 'Name for the notebooks artifact'
+    required: false
+    default: 'notebooks'
+  notebooks-source-dir:
+    description: 'Directory containing additional notebook repository files to copy'
+    required: false
+    default: 'notebooks_repo'
+  notebooks-artifact:
+    description: 'Whether to upload the notebooks artifact'
+    required: false
+    default: 'true'
+  node-version:
+    description: 'Node.js version to use for PDF generation'
+    required: false
+    default: '20'
+  build-slide-pdfs:
+    description: 'Whether to build slide PDFs using decktape'
+    required: false
+    default: 'true'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install linux dependencies
+      if: ${{ inputs.apt-packages != '' }}
+      shell: bash
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y ${{ inputs.apt-packages }}
+        
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: true
+        
+    - name: Install python and sync packages
+      shell: bash
+      run: uv sync
+      
+    - name: Activate venv for all future steps
+      shell: bash
+      run: |
+        echo "VIRTUAL_ENV=$(pwd)/.venv" >> $GITHUB_ENV
+        echo "$(pwd)/.venv/bin" >> $GITHUB_PATH
+        
+    - name: Setup node
+      if: ${{ inputs.build-slide-pdfs == 'true' }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        
+    - name: Install NPM packages
+      if: ${{ inputs.build-slide-pdfs == 'true' }}
+      shell: bash
+      run: |
+        cd ${{ github.action_path }}
+        npm ci
+      
+    - name: Read Quarto version
+      id: quarto-version
+      shell: bash
+      run: echo "version=$(cat .quarto-version)" >> $GITHUB_OUTPUT
+      
+    - name: Install Quarto
+      uses: quarto-dev/quarto-actions/setup@v2
+      with:
+        version: ${{ steps.quarto-version.outputs.version }}
+        
+    - name: Read Julia version
+      id: julia-version
+      if: ${{ hashFiles('.julia-version') != '' }}
+      shell: bash
+      run: echo "version=$(cat .julia-version)" >> $GITHUB_OUTPUT
+      
+    - name: Set up Julia
+      if: ${{ steps.julia-version.outputs.version != '' }}
+      uses: julia-actions/setup-julia@v2
+      with:
+        version: ${{ steps.julia-version.outputs.version }}
+        
+    - name: Cache Julia packages
+      uses: julia-actions/cache@v2
+      if: ${{ steps.julia-version.outputs.version != '' }}
+      
+    - name: Build Julia Project
+      if: ${{ steps.julia-version.outputs.version != '' }}
+      uses: julia-actions/julia-buildpkg@v1
+      
+    - name: Cache Quarto .jupyter_cache
+      uses: actions/cache@v4
+      with:
+        path: '**/.jupyter_cache/**'
+        key: ${{ runner.os }}-jupyter-cache-${{ github.ref_name }}-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-jupyter-cache-${{ github.ref_name }}-
+          ${{ runner.os }}-jupyter-cache-
+          
+    - name: Cache Quarto .cache (Julia)
+      uses: actions/cache@v4
+      with:
+        path: '**/.cache/**'
+        key: ${{ runner.os }}-julia-cache-${{ github.ref_name }}-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-julia-cache-${{ github.ref_name }}-
+          ${{ runner.os }}-julia-cache-
+          
+    - name: Cache PDF output
+      if: ${{ inputs.build-slide-pdfs == 'true' }}
+      uses: actions/cache@v4
+      with:
+        path: ${{ inputs.pdf-cache-dir }}
+        key: ${{ runner.os }}-pdf-cache-${{ github.ref_name }}-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-pdf-cache-${{ github.ref_name }}-
+          ${{ runner.os }}-pdf-cache-
+          
+    - name: Install Quarto chromium
+      shell: bash
+      run: |
+        quarto install tool chromium
+        export QUARTO_CHROMIUM=$(find /home/runner/.local/share/quarto/chromium -type f -name chrome -print -quit)
+        echo "QUARTO_CHROMIUM=$QUARTO_CHROMIUM" >> $GITHUB_ENV
+        
+    - name: Render Quarto Project
+      shell: bash
+      run: |
+        quarto render --profile ${{ inputs.quarto-profile }} ${{ inputs.quarto-args }}
+        
+    - name: Generate slide PDFs
+      if: ${{ inputs.build-slide-pdfs == 'true' }}
+      shell: bash
+      run: |
+        export PATH="${{ github.action_path }}/node_modules/.bin:$PATH"
+        python ${{ github.action_path }}/scripts/pdf_with_decktape.py
+        
+    - name: Upload website files as artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: ${{ inputs.output-dir }}
+        
+    - name: Prepare notebooks directory
+      if: ${{ inputs.notebooks-artifact == 'true' }}
+      shell: bash
+      run: |
+        mkdir -p .notebooks
+        cp -r ${{ inputs.notebooks-source-dir }}/. .notebooks/ || true
+        cp pyproject.toml uv.lock .notebooks/ || true
+        uv pip freeze > .notebooks/requirements.txt || true
+        cp Project.toml Manifest.toml .notebooks/ || true
+        rsync -av --include='*/' --include='*.ipynb' --include='*.py' --include='*.jl' --include='*.txt' --include='*.lock' --include='*.toml' --exclude='*' "${{ inputs.output-dir }}/" .notebooks/
+        rm -rf .notebooks/.venv || true
+        find .notebooks -depth -type d -empty -delete || true
+        
+    - name: Upload notebooks as artifact
+      if: ${{ inputs.notebooks-artifact == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: .notebooks
+        include-hidden-files: true
+        overwrite: true

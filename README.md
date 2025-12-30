@@ -1,2 +1,2 @@
 # Actions
-- See [push_artifact_repo](push_artifact_repo/README.md) for more details
+- See [quarto-build](quarto-build/README.md) for more details
