@@ -37,6 +37,18 @@ inputs:
     description: 'Whether to upload the notebooks artifact'
     required: false
     default: 'true'
+  include-uv-lock:
+    description: 'Whether to include pyproject.toml and uv.lock in notebooks artifact'
+    required: false
+    default: 'true'
+  include-pip-requirements:
+    description: 'Whether to include pip requirements.txt in notebooks artifact'
+    required: false
+    default: 'true'
+  include-julia-project:
+    description: 'Whether to include Julia Project.toml and Manifest.toml in notebooks artifact'
+    required: false
+    default: 'true'
   node-version:
     description: 'Node.js version to use for PDF generation'
     required: false
@@ -172,10 +184,30 @@ runs:
       run: |
         mkdir -p .notebooks
         cp -r ${{ inputs.notebooks-source-dir }}/. .notebooks/ || true
+        
+    - name: Copy uv lock files to notebooks
+      if: ${{ inputs.notebooks-artifact == 'true' && inputs.include-uv-lock == 'true' }}
+      shell: bash
+      run: |
         cp pyproject.toml uv.lock .notebooks/ || true
+        
+    - name: Generate pip requirements for notebooks
+      if: ${{ inputs.notebooks-artifact == 'true' && inputs.include-pip-requirements == 'true' }}
+      shell: bash
+      run: |
         uv pip freeze > .notebooks/requirements.txt || true
+        
+    - name: Copy Julia project files to notebooks
+      if: ${{ inputs.notebooks-artifact == 'true' && inputs.include-julia-project == 'true' }}
+      shell: bash
+      run: |
         cp Project.toml Manifest.toml .notebooks/ || true
-        rsync -av --include='*/' --include='*.ipynb' --include='*.py' --include='*.jl' --include='*.txt' --include='*.lock' --include='*.toml' --exclude='*' "${{ inputs.output-dir }}/" .notebooks/
+        
+    - name: Copy notebooks and scripts from output
+      if: ${{ inputs.notebooks-artifact == 'true' }}
+      shell: bash
+      run: |
+        rsync -av --include='*/' --include='*.ipynb' --include='*.py' --include='*.jl' --include='*.txt' --include='*.lock' --include='*.toml' --exclude='site_libs' --exclude='.nojekyll' --exclude='*' "${{ inputs.output-dir }}/" .notebooks/
         rm -rf .notebooks/.venv || true
         find .notebooks -depth -type d -empty -delete || true
         

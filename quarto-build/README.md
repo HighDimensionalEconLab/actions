@@ -39,7 +39,10 @@ jobs:
 | `output-dir` | Output directory for rendered Quarto project | No | `.lectures_output` |
 | `artifact-name` | Name for the notebooks artifact | No | `notebooks` |
 | `notebooks-source-dir` | Directory with additional notebook files to copy | No | `notebooks_repo` |
-| `upload-notebooks` | Whether to upload the notebooks artifact | No | `true` |
+| `notebooks-artifact` | Whether to upload the notebooks artifact | No | `true` |
+| `include-uv-lock` | Include pyproject.toml and uv.lock in notebooks artifact | No | `true` |
+| `include-pip-requirements` | Include pip requirements.txt in notebooks artifact | No | `true` |
+| `include-julia-project` | Include Julia Project.toml and Manifest.toml in notebooks artifact | No | `true` |
 | `node-version` | Node.js version for PDF generation | No | `20` |
 | `build-slide-pdfs` | Whether to build slide PDFs using decktape | No | `true` |
 
