@@ -167,6 +167,11 @@ runs:
       run: |
         quarto render --profile ${{ inputs.quarto-profile }} ${{ inputs.quarto-args }}
         
+    - name: Strip notebook cell ids
+      shell: bash
+      run: |
+        python ${{ github.action_path }}/scripts/strip_ipynb_ids.py ${{ inputs.output-dir }}
+        
     - name: Generate slide PDFs
       if: ${{ inputs.build-slide-pdfs == 'true' }}
       shell: bash
