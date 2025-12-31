@@ -8,7 +8,7 @@ inputs:
   apt-packages:
     description: 'Space-separated list of apt packages to install'
     required: false
-    default: 'ffmpeg graphviz'
+    default: 'ffmpeg graphviz librsvg2-bin'
   pdf-cache-dir:
     description: 'Directory for PDF cache'
     required: false
@@ -208,7 +208,7 @@ runs:
       if: ${{ inputs.notebooks-artifact == 'true' }}
       shell: bash
       run: |
-        rsync -av --include='*/' --include='*.ipynb' --include='*.py' --include='*.jl' --include='*.txt' --include='*.lock' --include='*.toml' --exclude='site_libs' --exclude='.nojekyll' --exclude='*' "${{ inputs.output-dir }}/" .notebooks/
+        rsync -av --exclude='site_libs' --exclude='.nojekyll' --include='*/' --include='*.ipynb' --include='*.py' --include='*.jl' --include='*.txt' --include='*.lock' --include='*.toml' --exclude='*' "${{ inputs.output-dir }}/" .notebooks/
         rm -rf .notebooks/.venv || true
         find .notebooks -depth -type d -empty -delete || true
         
