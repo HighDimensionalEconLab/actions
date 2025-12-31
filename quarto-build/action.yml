@@ -154,9 +154,10 @@ runs:
           ${{ runner.os }}-pdf-cache-${{ github.ref_name }}-
           ${{ runner.os }}-pdf-cache-
           
-    - name: Install Quarto chromium
+    - name: Install Quarto tools
       shell: bash
       run: |
+        quarto install tinytex
         quarto install tool chromium
         export QUARTO_CHROMIUM=$(find /home/runner/.local/share/quarto/chromium -type f -name chrome -print -quit)
         echo "QUARTO_CHROMIUM=$QUARTO_CHROMIUM" >> $GITHUB_ENV
