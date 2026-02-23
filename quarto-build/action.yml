@@ -57,6 +57,10 @@ inputs:
     description: 'Whether to build slide PDFs using decktape'
     required: false
     default: 'true'
+  latex-packages:
+    description: 'Space-separated list of LaTeX packages to install via tlmgr after TinyTeX setup'
+    required: false
+    default: 'pgfplots standalone environ trimspaces dvisvgm'
 
 runs:
   using: "composite"
@@ -158,6 +162,15 @@ runs:
       shell: bash
       run: |
         quarto install tinytex
+
+    - name: Install LaTeX packages
+      if: ${{ inputs.latex-packages != '' }}
+      shell: bash
+      run: quarto run tlmgr install ${{ inputs.latex-packages }}
+
+    - name: Install Chromium
+      shell: bash
+      run: |
         quarto install tool chromium
         export QUARTO_CHROMIUM=$(find /home/runner/.local/share/quarto/chromium -type f -name chrome -print -quit)
         echo "QUARTO_CHROMIUM=$QUARTO_CHROMIUM" >> $GITHUB_ENV
