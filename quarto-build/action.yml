@@ -8,7 +8,7 @@ inputs:
   apt-packages:
     description: 'Space-separated list of apt packages to install'
     required: false
-    default: 'ffmpeg graphviz librsvg2-bin'
+    default: 'ffmpeg graphviz librsvg2-bin poppler-utils'
   pdf-cache-dir:
     description: 'Directory for PDF cache'
     required: false
