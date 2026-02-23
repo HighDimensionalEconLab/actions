@@ -162,13 +162,13 @@ runs:
       shell: bash
       run: |
         quarto install tinytex
+        echo "$HOME/bin" >> $GITHUB_PATH
+        echo "$HOME/.TinyTeX/bin/x86_64-linux" >> $GITHUB_PATH
 
     - name: Install LaTeX packages
       if: ${{ inputs.latex-packages != '' }}
       shell: bash
-      run: |
-        export PATH="$HOME/bin:$HOME/.TinyTeX/bin/x86_64-linux:$PATH"
-        tlmgr install ${{ inputs.latex-packages }}
+      run: tlmgr install ${{ inputs.latex-packages }}
 
     - name: Install Chromium
       shell: bash
