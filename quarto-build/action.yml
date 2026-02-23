@@ -166,7 +166,9 @@ runs:
     - name: Install LaTeX packages
       if: ${{ inputs.latex-packages != '' }}
       shell: bash
-      run: quarto run tlmgr install ${{ inputs.latex-packages }}
+      run: |
+        export PATH="$HOME/bin:$HOME/.TinyTeX/bin/x86_64-linux:$PATH"
+        tlmgr install ${{ inputs.latex-packages }}
 
     - name: Install Chromium
       shell: bash
