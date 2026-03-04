@@ -1,12 +1,12 @@
 # Quarto Build Action
 
-A composite GitHub Action for building Quarto projects with Python, Node.js, Julia, and PDF generation support.
+A composite GitHub Action for building Quarto projects with Python, Julia, and PDF generation support.
 
 ## Features
 
-- **Multi-language support**: Python (uv), Julia within Quarto
+- **Multi-language support**: Python (uv), Julia
 - **Smart caching**: Jupyter cache, Julia cache, and PDF cache with branch isolation
-- **PDF generation**: Optional slide PDF generation using Decktape
+- **PDF generation**: Optional slide PDF generation using Playwright
 - **Artifact management**: Automatic upload of rendered site and notebooks
 - **Flexible configuration**: Customizable via inputs with sensible defaults
 
@@ -43,8 +43,7 @@ jobs:
 | `include-uv-lock` | Include pyproject.toml and uv.lock in notebooks artifact | No | `true` |
 | `include-pip-requirements` | Include pip requirements.txt in notebooks artifact | No | `true` |
 | `include-julia-project` | Include Julia Project.toml and Manifest.toml in notebooks artifact | No | `true` |
-| `node-version` | Node.js version for PDF generation | No | `20` |
-| `build-slide-pdfs` | Whether to build slide PDFs using decktape | No | `true` |
+| `build-slide-pdfs` | Whether to build slide PDFs using Playwright | No | `true` |
 
 ## Requirements
 

@@ -1,0 +1,6 @@
+[project]
+name = "quarto-build-scripts"
+version = "0.1.0"
+description = "Helper scripts for the quarto-build GitHub Action"
+requires-python = ">=3.12"
+dependencies = ["playwright>=1.50.0"]

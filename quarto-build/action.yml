@@ -1,5 +1,5 @@
 name: 'Build Quarto Project'
-description: 'Sets up Python, Node, Julia, and Quarto environment and renders a Quarto project'
+description: 'Sets up Python, Julia, and Quarto environment and renders a Quarto project'
 branding:
   icon: 'book-open'
   color: 'blue'
@@ -49,12 +49,8 @@ inputs:
     description: 'Whether to include Julia Project.toml and Manifest.toml in notebooks artifact'
     required: false
     default: 'true'
-  node-version:
-    description: 'Node.js version to use for PDF generation'
-    required: false
-    default: '20'
   build-slide-pdfs:
-    description: 'Whether to build slide PDFs using decktape'
+    description: 'Whether to build slide PDFs using Playwright'
     required: false
     default: 'true'
   latex-packages:
@@ -87,18 +83,10 @@ runs:
         echo "VIRTUAL_ENV=$(pwd)/.venv" >> $GITHUB_ENV
         echo "$(pwd)/.venv/bin" >> $GITHUB_PATH
         
-    - name: Setup node
-      if: ${{ inputs.build-slide-pdfs == 'true' }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ inputs.node-version }}
-        
-    - name: Install NPM packages
+    - name: Install Playwright for PDF generation
       if: ${{ inputs.build-slide-pdfs == 'true' }}
       shell: bash
-      run: |
-        cd ${{ github.action_path }}
-        npm ci
+      run: uv run --project ${{ github.action_path }}/scripts playwright install --with-deps chromium
       
     - name: Read Quarto version
       id: quarto-version
@@ -190,9 +178,7 @@ runs:
     - name: Generate slide PDFs
       if: ${{ inputs.build-slide-pdfs == 'true' }}
       shell: bash
-      run: |
-        export PATH="${{ github.action_path }}/node_modules/.bin:$PATH"
-        python ${{ github.action_path }}/scripts/pdf_with_decktape.py
+      run: uv run --project ${{ github.action_path }}/scripts python ${{ github.action_path }}/scripts/slides_to_pdf.py
         
     - name: Upload website files as artifact
       uses: actions/upload-pages-artifact@v3
