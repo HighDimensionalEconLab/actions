@@ -86,7 +86,9 @@ runs:
     - name: Install Playwright for PDF generation
       if: ${{ inputs.build-slide-pdfs == 'true' }}
       shell: bash
-      run: uv run --project ${{ github.action_path }}/scripts playwright install --with-deps chromium
+      run: |
+        unset VIRTUAL_ENV
+        uv run --project ${{ github.action_path }}/scripts playwright install --with-deps chromium
       
     - name: Read Quarto version
       id: quarto-version
@@ -178,7 +180,9 @@ runs:
     - name: Generate slide PDFs
       if: ${{ inputs.build-slide-pdfs == 'true' }}
       shell: bash
-      run: uv run --project ${{ github.action_path }}/scripts python ${{ github.action_path }}/scripts/slides_to_pdf.py
+      run: |
+        unset VIRTUAL_ENV
+        uv run --project ${{ github.action_path }}/scripts python ${{ github.action_path }}/scripts/slides_to_pdf.py
         
     - name: Upload website files as artifact
       uses: actions/upload-pages-artifact@v3
