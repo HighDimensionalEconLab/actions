@@ -22,6 +22,23 @@ from playwright.async_api import async_playwright
 SLIDE_WIDTH = 1280
 SLIDE_HEIGHT = 720
 
+# RevealJS print-pdf mode sets display:inline-block on slide children for
+# vertical centering.  Chromium's print engine treats inline-block as an
+# atomic box that cannot be split across page boundaries.  When the 10%
+# RevealJS margin makes the slide section taller than the PDF page, later
+# slides progressively drift off the page boundary.  An inline-block child
+# that doesn't fit in the remaining page space is pushed out entirely,
+# producing a blank page.  Forcing display:block on list elements in print
+# media fixes this without affecting flex column layouts or tables.
+PRINT_FIX_CSS = """
+@media print {
+    .reveal .slides section > ul,
+    .reveal .slides section > ol {
+        display: block !important;
+    }
+}
+"""
+
 
 def compute_file_hash(file_path: str) -> str:
     hash_algo = hashlib.sha256()
@@ -51,6 +68,9 @@ async def convert_slide(page, html_file_path: str, cache_pdf_path: str) -> bool:
             print(f"    MathJax rendering complete")
         except Exception:
             print(f"    No MathJax detected (or already done)")
+
+        # Fix inline-block elements that cause blank pages in print mode
+        await page.add_style_tag(content=PRINT_FIX_CSS)
 
         # Brief pause for RevealJS print-pdf CSS restructuring
         await page.wait_for_timeout(2000)
