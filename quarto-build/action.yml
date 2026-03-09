@@ -158,7 +158,9 @@ runs:
     - name: Install LaTeX packages
       if: ${{ inputs.latex-packages != '' }}
       shell: bash
-      run: tlmgr install ${{ inputs.latex-packages }}
+      run: |
+        tlmgr update --self
+        tlmgr install ${{ inputs.latex-packages }}
 
     - name: Install Chromium
       shell: bash
